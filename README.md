@@ -27,7 +27,7 @@ seq  = "ATCGAGAATCCCGGTGCCGAGGCCGCTCAATTGGTCGTAGACAGCTCTAGCACCGCTTAAACGCACGTACGC
 shl_open_left = 0
 shl_open_right = 0
 
-nout = nfe.eval_single(
+nout = nfe.eval(
     seq,
     shl_open_left = shl_open_left,
     shl_open_right = shl_open_right,
@@ -42,8 +42,8 @@ nout = nfe.eval_single(
     Select the elastic model for the generation of stiffness and structure parameters:
 
     - `md`: Molecular Dynamics derived parameters from Lankas et al. \[[1](#lank03)\]
-    - `md`: Molecular Dynamics derived parameters from Lankas et al. [1](#lank03)
-    - `cgna+`: Molecular Dynamics derived parameters from Lankas et al. [1](#lank03)
+    - `crystal`: Molecular Dynamics derived parameters from Lankas et al. [1](#olson98)
+    - `cgna+`: Molecular Dynamics derived parameters from Lankas et al. [1](#sharma23)
 
 
 
