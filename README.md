@@ -37,22 +37,22 @@ nout = nfe.eval(
 
 ### Arguments <a name=args></a>
 
-- `params_model`:
+- `params_model` (str):
     Select the elastic model for the generation of stiffness and structure parameters:
     - `md`: Molecular Dynamics derived parameters from Lankas et al. \[[1](#lank03)\]
     - `crystal`: Parameters from crystallographic data from Olson et al. \[[2](#olson98)\]
     - `cgna+`: Parameters derived from cgNA+ via marginalization to rigid base pair model \[[3](#sharma23)\]
 
-- `hardconstraint`:
-    Select nucleosome binding model
+- `hardconstraint` (bool):
+    Select nucleosome binding model (bool)
     - `True`: Use hard constraint model
     - `False`: Use soft constraint model
 
 - `shl_open_left`:
-    select number of open superhelical locations counted from the left
+    select number of open superhelical locations counted from the left (int)
 
 - `shl_open_right`:
-    select number of open superhelical locations counted from the right
+    select number of open superhelical locations counted from the right (int)
 
 
 \[1\] <a name="lank03"></a> F. Lankaš, Jiří Šponer, Jörg Langowski, Thomas E. Cheatham, III, DNA basepair step deformability inferred from molecular dynamics simulations, [Biophys. J, **85**, 2872 (2003)](https://doi.org/10.1016/S0006-3495(03)74710-9).
