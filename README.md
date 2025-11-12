@@ -44,15 +44,15 @@ nout = nfe.eval(
     - `cgna+`: Parameters derived from cgNA+ via marginalization to rigid base pair model \[[3](#sharma23)\]
 
 - `hardconstraint` (bool):
-    Select nucleosome binding model (bool)
+    Select nucleosome binding model
     - `True`: Use hard constraint model
     - `False`: Use soft constraint model
 
-- `shl_open_left`:
-    select number of open superhelical locations counted from the left (int)
+- `shl_open_left` (int):
+    select number of open superhelical locations counted from the left
 
-- `shl_open_right`:
-    select number of open superhelical locations counted from the right (int)
+- `shl_open_right` (int):
+    select number of open superhelical locations counted from the right
 
 
 \[1\] <a name="lank03"></a> F. Lankaš, Jiří Šponer, Jörg Langowski, Thomas E. Cheatham, III, DNA basepair step deformability inferred from molecular dynamics simulations, [Biophys. J, **85**, 2872 (2003)](https://doi.org/10.1016/S0006-3495(03)74710-9).
