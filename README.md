@@ -42,8 +42,8 @@ nout = nfe.eval(
     Select the elastic model for the generation of stiffness and structure parameters:
 
     - `md`: Molecular Dynamics derived parameters from Lankas et al. \[[1](#lank03)\]
-    - `crystal`: Molecular Dynamics derived parameters from Lankas et al. [2](#olson98)
-    - `cgna+`: Molecular Dynamics derived parameters from Lankas et al. [3](#sharma23)
+    - `crystal`: Molecular Dynamics derived parameters from Lankas et al. \[[1](#olson98)\]
+    - `cgna+`: Molecular Dynamics derived parameters from Lankas et al. \[[1](#sharma23)\]
 
 
 
