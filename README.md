@@ -43,6 +43,9 @@ nout = nfe.eval(
     - `crystal`: Parameters from crystallographic data from Olson et al. \[[2](#olson98)\]
     - `cgna+`: Parameters derived from cgNA+ via marginalization to rigid base pair model \[[3](#sharma23)\]
 
+- `hardconstraint`:
+    - `True`: Use hard constraint model
+    - `False`: Use soft constraint model
 
 \[1\] <a name="lank03"></a> F. Lankaš, Jiří Šponer, Jörg Langowski, Thomas E. Cheatham, III, DNA basepair step deformability inferred from molecular dynamics simulations, [Biophys. J, **85**, 2872 (2003)](https://doi.org/10.1016/S0006-3495(03)74710-9).
 
