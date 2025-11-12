@@ -13,7 +13,6 @@ git clone --recurse-submodules -j8 git@github.com:eskoruppa/RBPNFE.git
 ```python
 import rbpnfe
 
-
 params_model = 'MD'
 hard_constraint = False
 
@@ -33,6 +32,10 @@ nout = nfe.eval(
     shl_open_right = shl_open_right,
     use_correction = True
     )
+
+print(f'Full Free Energy:         {nout["F"]:.2f} kT')
+print(f'Fluctuation Contribution: {nout["F_fluctuation"]:.2f} kT')
+print(f'Enthalpic Contribution:   {nout["F_enthalpy"]:.2f} kT')
 ```
 
 ### Arguments <a name=args></a>

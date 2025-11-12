@@ -28,7 +28,7 @@ def hc_free_energy(
     
         Fdict = {
             'F': F,
-            'F_entropy'  : F,
+            'F_fluctuation'  : F,
             'F_enthalpy' : 0,
             'F_jacob'    : 0,
             'F_freedna'  : F,
@@ -137,7 +137,7 @@ def hc_free_energy(
     F_pi = -0.5*n * np.log(2*np.pi)
     # matrix term
     F_mat = 0.5*logdet
-    F_entropy = F_pi + F_mat
+    F_fluctuation = F_pi + F_mat
     F_jacob = np.log(np.linalg.det(transform))
     
     # free energy of unconstrained DNA
@@ -147,12 +147,12 @@ def hc_free_energy(
      
     # prepare output
     Fdict = {
-        'F': F_entropy + F_jacob + F_const_C + F_const_b,
-        'F_entropy'  : F_entropy + F_jacob,
+        'F': F_fluctuation + F_jacob + F_const_C + F_const_b,
+        'F_fluctuation'  : F_fluctuation + F_jacob,
         'F_enthalpy' : F_const_C + F_const_b,
         'F_jacob'    : F_jacob,
         'F_freedna'  : F_free,
-        'dF'         : F_entropy + F_jacob + F_const_C + F_const_b - F_free , 
+        'dF'         : F_fluctuation + F_jacob + F_const_C + F_const_b - F_free , 
         'gs'         : gs
     }
     return Fdict

@@ -126,7 +126,7 @@ def sc_free_energy(
         F = F_mat + F_pi  
         Fdict = {
             'F': F,
-            'F_entropy' : F,
+            'F_fluctuation' : F,
             'F_enthalpy': 0,
             'F_jacob'   : 0,
             'F_freedna' : F,
@@ -286,7 +286,7 @@ def sc_free_energy(
     # F_Bjacob = 0.5*Blogdet
     
     # Full entropy term
-    F_entropy = Z_entropy + R_entropy + F_Ajacob #+ F_Bjacob
+    F_fluctuation = Z_entropy + R_entropy + F_Ajacob #+ F_Bjacob
     
     
     # free energy of unconstrained DNA
@@ -296,13 +296,13 @@ def sc_free_energy(
     
     # prepare output
     Fdict = {
-        'F': F_entropy + F_enthalpy,
-        'F_entropy' : F_entropy,
+        'F': F_fluctuation + F_enthalpy,
+        'F_fluctuation' : F_fluctuation,
         'F_enthalpy': F_enthalpy,
         'F_jacob'  : F_Ajacob,
         # 'F_Bjacob'  : F_Bjacob,
         'F_freedna' : F_free,
-        'dF'        : F_entropy + F_enthalpy - F_free ,
+        'dF'        : F_fluctuation + F_enthalpy - F_free ,
         'gs'        : gs,
         'alphas'    : alphas
     }
@@ -357,7 +357,7 @@ if __name__ == '__main__':
     )
     
     print(f"F:   {nucout['F']}")
-    print(f"F_E: {nucout['F_entropy']}")
+    print(f"F_E: {nucout['F_fluctuation']}")
     print(f"F_S: {nucout['F_enthalpy']}")
 
     print(f"dF:  {nucout['F'] - nucout['F_freedna']}")
