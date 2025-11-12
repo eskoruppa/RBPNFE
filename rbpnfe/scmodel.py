@@ -129,7 +129,8 @@ def sc_free_energy(
             'F_entropy' : F,
             'F_enthalpy': 0,
             'F_jacob'   : 0,
-            'F_freedna'    : F,
+            'F_freedna' : F,
+            'dF'        : 0,
             'gs': np.zeros(free_gs.shape),
             'alphas' : None
         }
@@ -301,6 +302,7 @@ def sc_free_energy(
         'F_jacob'  : F_Ajacob,
         # 'F_Bjacob'  : F_Bjacob,
         'F_freedna' : F_free,
+        'dF'        : F_entropy + F_enthalpy - F_free ,
         'gs'        : gs,
         'alphas'    : alphas
     }

@@ -15,7 +15,7 @@ def hc_free_energy(
     stiffmat: np.ndarray,
     midstep_constraint_locations: List[int],  # index of the lower (left-hand) triad neighboring the constraint midstep-triad
     nucleosome_triads: np.ndarray,
-    use_correction: bool = False,
+    use_correction: bool = True,
 ) -> np.ndarray:
     
     if len(midstep_constraint_locations) == 0:
@@ -32,6 +32,7 @@ def hc_free_energy(
             'F_enthalpy' : 0,
             'F_jacob'    : 0,
             'F_freedna'  : F,
+            'dF'         : 0,
             'gs'         : np.zeros(n)
         }
         return Fdict
@@ -151,6 +152,7 @@ def hc_free_energy(
         'F_enthalpy' : F_const_C + F_const_b,
         'F_jacob'    : F_jacob,
         'F_freedna'  : F_free,
+        'dF'         : F_entropy + F_jacob + F_const_C + F_const_b - F_free , 
         'gs'         : gs
     }
     return Fdict
@@ -174,8 +176,8 @@ if __name__ == '__main__':
     seq = seq601
     
     beta = 1./4.114
-    stiff,gs = genstiff.gen_params(seq)
-    
+    prms = genstiff.gen_params(seq,use_group=True)
+
     triadfn = os.path.join(os.path.dirname(__file__), 'Parameters/Nucleosome.state')
     nuctriads = read_nucleosome_triads(triadfn)
 
@@ -187,12 +189,16 @@ if __name__ == '__main__':
         128, 131, 139, 143
     ]
         
-    Fdict  = hc_free_energy(
-        gs,
-        stiff,
+    nout  = hc_free_energy(
+        prms['groundstate'],
+        prms['stiffness'],
         midstep_constraint_locations, 
         nuctriads
     )
     
-    for key in Fdict:
-        print(f'{key} = {Fdict[key]}')
+    print(nout['dF'])
+    print(nout['F'])
+    print(nout['F_freedna'])
+    
+    # for key in nout:
+    #     print(f'{key} = {nout[key]}')
