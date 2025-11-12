@@ -7,6 +7,8 @@ git clone --recurse-submodules -j8 git@github.com:eskoruppa/RBPNFE.git
 ```
 
 
+## Basic Function
+
 
 ```python
 import rbpnfe
@@ -39,7 +41,7 @@ nout = nfe.eval_single(
 
     Select the elastic model for the generation of stiffness and structure parameters:
 
-    - `md`: Molecular Dynamics derived parameters from Lankas et al. [1](#lank03)
+    - `md`: Molecular Dynamics derived parameters from [Lankas et al.](#lank03)
     - `md`: Molecular Dynamics derived parameters from Lankas et al. [1](#lank03)
     - `cgna+`: Molecular Dynamics derived parameters from Lankas et al. [1](#lank03)
 
