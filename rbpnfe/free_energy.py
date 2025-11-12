@@ -146,7 +146,7 @@ if __name__ == '__main__':
     shl_open_left = 0
     shl_open_right = 0
     
-    nout = nfe.eval_single(
+    nout = nfe.eval(
         seq,
         shl_open_left = shl_open_left,
         shl_open_right = shl_open_right,
