@@ -9,6 +9,7 @@ git clone --recurse-submodules -j8 git@github.com:eskoruppa/RBPNFE.git
 
 ## Basic Function
 
+Free energy calculations for individual positioning sequences (147bp) can be accessed via the `NucFreeEnergy` object.
 
 ```python
 import rbpnfe
