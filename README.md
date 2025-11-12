@@ -49,3 +49,6 @@ nout = nfe.eval_single(
 
 
 \[1\] <a name="lank03"></a> F. Lankaš, Jiří Šponer, Jörg Langowski, Thomas E. Cheatham, III, DNA basepair step deformability inferred from molecular dynamics simulations. [*Biophys. J*, 85, 2872 (2003)](https://doi.org/10.1016/S0006-3495(03)74710-9).
+
+\[2\] <a name="olson98"></a> W. K. Olson, A. A. Gorin, X. Lu, L. M. Hock, and V. B. Zhurkin, DNA sequence-dependent deformability deduced from protein–DNA crystal complexes. [*Proc. Natl. Acad. Sci. U.S.A.* 95, 11163 (1998).](https://doi.org/10.1073/pnas.95.19.11163).
+
