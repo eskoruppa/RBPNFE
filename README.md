@@ -49,10 +49,13 @@ nout = nfe.eval(
     - `False`: Use soft constraint model
 
 - `shl_open_left` (int):
-    select number of open superhelical locations counted from the left
+    select number of open superhelical locations counted from the left (default: 0)
 
 - `shl_open_right` (int):
-    select number of open superhelical locations counted from the right
+    select number of open superhelical locations counted from the right (default: 0)
+
+- `use_correction` (bool):
+    Apply translation correction in second iteration by expanding around compromise rotations deduced during first iteration (default: True)
 
 
 \[1\] <a name="lank03"></a> F. Lankaš, Jiří Šponer, Jörg Langowski, Thomas E. Cheatham, III, DNA basepair step deformability inferred from molecular dynamics simulations, [Biophys. J, **85**, 2872 (2003)](https://doi.org/10.1016/S0006-3495(03)74710-9).
