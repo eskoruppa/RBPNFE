@@ -1,0 +1,9 @@
+[submodule "rbpnfe/RBPStiff"]
+	path = rbpnfe/RBPStiff
+	url = git@github.com:eskoruppa/RBPStiff
+[submodule "rbpnfe/PolyCG"]
+	path = rbpnfe/PolyCG
+	url = git@github.com:eskoruppa/PolyCG
+[submodule "rbpnfe/SO3"]
+	path = rbpnfe/SO3
+	url = git@github.com:eskoruppa/SO3

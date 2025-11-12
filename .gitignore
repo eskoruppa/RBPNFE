@@ -16,5 +16,10 @@
 **data/
 **DATA/
 
+# ignore figure directories
+**Fig/
+**fig/
+**FIG/
+
 # ignore egg-info directory
 **.egg-info/
