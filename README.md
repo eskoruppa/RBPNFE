@@ -48,7 +48,9 @@ nout = nfe.eval_single(
 
 
 
-\[1\] <a name="lank03"></a> F. Lankaš, Jiří Šponer, Jörg Langowski, Thomas E. Cheatham, III, DNA basepair step deformability inferred from molecular dynamics simulations. [*Biophys. J*, 85, 2872 (2003)](https://doi.org/10.1016/S0006-3495(03)74710-9).
+\[1\] <a name="lank03"></a> F. Lankaš, Jiří Šponer, Jörg Langowski, Thomas E. Cheatham, III, DNA basepair step deformability inferred from molecular dynamics simulations, [Biophys. J, _85_, 2872 (2003)](https://doi.org/10.1016/S0006-3495(03)74710-9).
 
-\[2\] <a name="olson98"></a> W. K. Olson, A. A. Gorin, X. Lu, L. M. Hock, and V. B. Zhurkin, DNA sequence-dependent deformability deduced from protein–DNA crystal complexes. [*Proc. Natl. Acad. Sci. U.S.A.* 95, 11163 (1998).](https://doi.org/10.1073/pnas.95.19.11163).
+\[2\] <a name="olson98"></a> W. K. Olson, A. A. Gorin, X. Lu, L. M. Hock, and V. B. Zhurkin, DNA sequence-dependent deformability deduced from protein–DNA crystal complexes, [Proc. Natl. Acad. Sci. U.S.A. _95_, 11163 (1998).](https://doi.org/10.1073/pnas.95.19.11163).
 
+\[3\] <a name="sharma23"></a> R. Sharma, A. S. Patelli, L. de Bruin, and J. H. Maddocks, cgNA+web: A visual interface to the cgNA+ sequence-dependent statistical mechanics model of double-stranded nucleic acids, [J. Mol. Biol. _435_,
+167978 (2023).](http://dx.doi.org/10.1016/j.jmb.2023.167978).
