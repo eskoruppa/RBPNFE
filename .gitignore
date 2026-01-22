@@ -20,6 +20,9 @@
 **Fig/
 **fig/
 **FIG/
+**Figs/
+**figs/
+**FIGs/
 
 # ignore egg-info directory
 **.egg-info/
