@@ -47,6 +47,7 @@ print(f'Enthalpic Contribution:   {nout["F_enthalpy"]:.2f} kT')
     - `md`: Molecular Dynamics derived parameters from Lankas et al. \[[1](#lank03)\]
     - `crystal`: Parameters from crystallographic data from Olson et al. \[[2](#olson98)\]
     - `cgna+`: Parameters derived from cgNA+ via marginalization to rigid base pair model \[[3](#sharma23)\]
+    - `hybrid`: md parameters for stiffness and crystal parameters for ground state.
 
 - `hardconstraint` (bool):
     Select nucleosome binding model
