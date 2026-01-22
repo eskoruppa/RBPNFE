@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys, os
 import numpy as np
 from typing import List, Tuple, Callable, Any, Dict
@@ -8,7 +10,7 @@ from .PolyCG.polycg.transforms.transform_marginals import send_to_back_permutati
 
 
 def calculate_midstep_triads(
-    triad_ids: List[int],  # index of the lower (left-hand) triad neighboring the constraint midstep-triad
+    triad_ids: list[int],  # index of the lower (left-hand) triad neighboring the constraint midstep-triad
     nucleosome_triads: np.ndarray
 ) -> np.ndarray:
     midstep_triads = np.zeros((len(triad_ids),4,4))
@@ -40,9 +42,9 @@ def midstep_excess_vals(
     groundstate: np.ndarray,
     midstep_constraint_locations: List[int],
     midstep_triads: np.ndarray  
-):
+) -> np.ndarray:
     num = len(midstep_constraint_locations)-1
-    excess_vals = np.zeros((num,6))
+    excess_vals = np.zeros((num,6), dtype=np.float64)
     for i in range(num):
         id1 = midstep_constraint_locations[i]
         id2 = midstep_constraint_locations[i+1]
@@ -58,7 +60,7 @@ def midstep_groundstate_se3(
     midstep_locs: List[int]
     ) -> np.ndarray:
     num = len(midstep_locs)-1
-    sks = np.zeros((num,4,4))
+    sks = np.zeros((num,4,4), dtype=np.float64)
     for i in range(num):
         id1 = midstep_locs[i]
         id2 = midstep_locs[i+1]
@@ -84,7 +86,7 @@ def midstep_groundstate(
     midstep_locs: List[int]
     ) -> np.ndarray:
     num = len(midstep_locs)-1
-    mid_gs = np.zeros((num,6))
+    mid_gs = np.zeros((num,6), dtype=np.float64)
     for i in range(num):
         id1 = midstep_locs[i]
         id2 = midstep_locs[i+1]
@@ -102,7 +104,7 @@ def midstep_se3_groundstate(groundstate: np.ndarray) -> np.ndarray:
     Phi0s = groundstate[:,:3]
     N = len(groundstate)
     # assign static rotation matrices
-    srots = np.zeros((N,3,3))
+    srots = np.zeros((N,3,3), dtype=np.float64)
     srots[0]  = so3.euler2rotmat(0.5*Phi0s[0])    
     srots[-1] = so3.euler2rotmat(0.5*Phi0s[-1])    
     for l in range(1,len(srots)-1):
@@ -112,9 +114,9 @@ def midstep_se3_groundstate(groundstate: np.ndarray) -> np.ndarray:
     trans[0] = 0.5*trans[0]
     trans[-1] = 0.5* srots[-1].T @ trans[-1]
     
-    Smats = np.zeros((N,4,4))
+    Smats = np.zeros((N,4,4), dtype=np.float64)
     for i in range(N):
-        S = np.zeros((4,4))
+        S = np.zeros((4,4), dtype=np.float64)
         S[:3,:3] = srots[i]
         S[:3,3]  = trans[i]
         S[3,3]   = 1
@@ -125,7 +127,7 @@ def midstep_se3_groundstate(groundstate: np.ndarray) -> np.ndarray:
 def midstep_composition_transformation(
     intrinsic_groundstate: np.ndarray,
     midstep_constraint_locations: List[int],
-) -> Tuple[np.ndarray,List[int]]:
+) -> tuple[np.ndarray,list[int]]:
     N = len(intrinsic_groundstate)
     mat = np.eye(N*6)
     replaced_ids = []
@@ -150,7 +152,7 @@ def midstep_composition_block_first_order(
     
     N = len(groundstate)
     # assign static rotation matrices
-    srots = np.zeros((N,3,3))
+    srots = np.zeros((N,3,3), dtype=np.float64)
     srots[0]  = so3.euler2rotmat(0.5*Phi0s[0])    
     srots[-1] = so3.euler2rotmat(0.5*Phi0s[-1])    
     for l in range(1,len(srots)-1):
@@ -165,7 +167,7 @@ def midstep_composition_block_first_order(
     N = len(groundstate)
     i = 0
     j = N-1
-    comp_block  = np.zeros((ndims,N*ndims))
+    comp_block  = np.zeros((ndims,N*ndims), dtype=np.float64)
     
     ################################  
     # set middle blocks (i < k < j)
@@ -174,7 +176,7 @@ def midstep_composition_block_first_order(
         comp_block[:3,k*6:k*6+3]   = Saccu.T
         comp_block[3:,k*6+3:k*6+6] = Saccu.T
         
-        coup = np.zeros((3,3))
+        coup = np.zeros((3,3), dtype=np.float64)
         for l in range(k+1,j+1):
             coup += so3.hat_map(-rot_accu(srots,l,j).T @ trans[l])
         coup = coup @ Saccu.T
@@ -192,7 +194,7 @@ def midstep_composition_block_first_order(
     comp_block[:3,:3] = 0.5 * Saccu.T @ Hprod
     comp_block[3:,3:6] = 0.5 * Saccu.T
     
-    coup = np.zeros((3,3))
+    coup = np.zeros((3,3), dtype=np.float64)
     # first term
     for l in range(1,j+1):
         coup += so3.hat_map(-rot_accu(srots,l,j).T @ trans[l])
@@ -220,9 +222,9 @@ def midstep_composition_block_first_order(
 
 def midstep_composition_transformation_correction(
     intrinsic_groundstate: np.ndarray,
-    midstep_constraint_locations: List[int],
+    midstep_constraint_locations: list[int],
     first_order_compromise: np.ndarray
-) -> np.ndarray:
+) -> tuple[np.ndarray,list[int],np.ndarray]:
     N = len(intrinsic_groundstate)
     mat = np.eye(N*6)
     replaced_ids = []
@@ -244,7 +246,7 @@ def midstep_composition_transformation_correction(
 def midstep_composition_block_correction(
     groundstate: np.ndarray,
     deformations: np.ndarray
-) -> np.ndarray:
+) -> tuple[np.ndarray,np.ndarray]:
     if len(groundstate) < 2:
         raise ValueError(f'midstep_composition_block: groundstate needs to contain at least two elements. {len(groundstate)} provided.')
      
@@ -264,7 +266,7 @@ def midstep_composition_block_correction(
     # Euler vectors
     Phi0s = groundstate[:,:3]
     # static rotation matrices
-    srots = np.zeros((N,3,3))
+    srots = np.zeros((N,3,3), dtype=np.float64)
     # left half-step
     srots[0]  = so3.euler2rotmat(0.5*Phi0s[0])    
     # right half-step
@@ -289,7 +291,7 @@ def midstep_composition_block_correction(
     Phid0 = deformations[:,:3]
     
     # dynamic rotation matrices
-    drots = np.zeros((N,3,3))
+    drots = np.zeros((N,3,3), dtype=np.float64)
     # left half-step
     Phi_0 = Phi0s[0]
     H_half = so3.splittransform_algebra2group(0.5*Phi_0)
@@ -310,14 +312,14 @@ def midstep_composition_block_correction(
     ################################################
     # pre compute repeatedly occuring products
     
-    Rrots = np.zeros(srots.shape)
+    Rrots = np.zeros(srots.shape, dtype=np.float64)
     for l in range(len(drots)):
         Rrots[l] = srots[l] @ drots[l]
     
     ################################################
     # products of static rotation matrices
     # S_{[l,j]}
-    S_lj = np.zeros((N+1,3,3))
+    S_lj = np.zeros((N+1,3,3), dtype=np.float64)
     curr = np.eye(3)
     S_lj[N] = curr
     for k in range(N):
@@ -327,9 +329,9 @@ def midstep_composition_block_correction(
     ################################################
     # translational component of composites
     # s_{(l,j)}
-    s_lj = np.zeros((N+1,3))
+    s_lj = np.zeros((N+1,3), dtype=np.float64)
     for l in range(N):
-        scomp = np.zeros(3)
+        scomp = np.zeros(3, dtype=np.float64)
         for k in range(l,N):
             scomp += rot_accu(srots,l,k-1) @ strans[k]
         s_lj[l] = scomp
@@ -337,9 +339,9 @@ def midstep_composition_block_correction(
     ################################################
     # lambda_k
 
-    lambdak = np.zeros((N,3))
+    lambdak = np.zeros((N,3), dtype=np.float64)
     for k in range(N):
-        lambsum = np.zeros(3)
+        lambsum = np.zeros(3, dtype=np.float64)
         # j+1 = N
         for l in range(k+1,N):
             lambsum += rot_accu(Rrots,k+1,l-1) @ srots[l] @ (drots[l] - np.eye(3)) @ s_lj[l+1]
@@ -348,8 +350,8 @@ def midstep_composition_block_correction(
     ################################################
     ################################################
     # compose composite block
-    comp_block = np.zeros((ndims,N*ndims))
-    const      = np.zeros(6)
+    comp_block = np.zeros((ndims,N*ndims), dtype=np.float64)
+    const      = np.zeros(6, dtype=np.float64)
 
     ################################  
     # set middle blocks (i < k < j)

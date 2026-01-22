@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys, os
 import numpy as np
 import scipy as sp
@@ -75,7 +77,10 @@ class NucFreeEnergy:
         shl_open_left:  int = 0,
         shl_open_right: int = 0,
         use_correction: bool = True
-        ):
+        ) -> dict[str]:
+        
+        if len(seq) != 147:
+            raise ValueError(f'Provided sequence needs to be of length 147. Provided sequence has length {len(seq)}')
         
         if shl_open_left + shl_open_right > 14:
             raise ValueError('The number of open superhelcial locations cannot exceed 14')
@@ -106,7 +111,7 @@ class NucFreeEnergy:
         return nucout
        
         
-    def gen_params(self,seq: str,flanking: int=10):
+    def gen_params(self,seq: str,flanking: int=10) -> tuple[np.ndarray,np.ndarray]:
         if self.params_model in self.cgnaplus_names:
             if flanking > 0:
                 flank = ('CG' * int(np.ceil(flanking / 2)))[:flanking]

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys, os
 import numpy as np
 import scipy as sp
@@ -11,7 +13,7 @@ from .midstep_composites import midstep_composition_transformation, midstep_grou
 from .midstep_composites import midstep_composition_transformation_correction
 from .midstep_composites import calculate_midstep_triads
 
-def get_midstep_locations(left_open: int, right_open: int, base_midstep_locations = None, sort = True):
+def get_midstep_locations(left_open: int, right_open: int, base_midstep_locations = None, sort = True) -> list[int]:
     if base_midstep_locations is None:
         MIDSTEP_LOCATIONS = [
             2, 6, 14, 17, 24, 29, 
@@ -30,7 +32,7 @@ def get_midstep_locations(left_open: int, right_open: int, base_midstep_location
         locs = sorted(list(set(locs)))
     return locs
 
-def Hinverse(Psi):
+def Hinverse(Psi: float) -> np.ndarray:
     psih = so3.hat_map(Psi)
     psihsq = psih @ psih
     Hinv = np.eye(3)
@@ -40,9 +42,9 @@ def Hinverse(Psi):
     Hinv += 1./30240 * psihsq @ psihsq @ psihsq
     return Hinv
     
-def coordinate_transformation(muk0s,sks):
-    B = np.zeros((len(sks)*6,len(muk0s)*6))
-    Pbar = np.zeros(len(sks)*6)
+def coordinate_transformation(muk0s: np.ndarray, sks: np.ndarray) -> tuple[np.ndarray,np.ndarray]:
+    B = np.zeros((len(sks)*6,len(muk0s)*6), dtype=np.float64)
+    Pbar = np.zeros(len(sks)*6, dtype=np.float64)
     for k in range(len(sks)):
         sig0 = np.linalg.inv(muk0s[k]) @ muk0s[k+1]
         Sig  = sig0[:3,:3]
@@ -52,8 +54,8 @@ def coordinate_transformation(muk0s,sks):
         
         Psi  = so3.rotmat2euler(Sk.T @ Sig)
         Hi   = Hinverse(Psi)
-        Bkm = np.zeros((6,6))
-        Bkp = np.zeros((6,6))
+        Bkm = np.zeros((6,6), dtype=np.float64)
+        Bkp = np.zeros((6,6), dtype=np.float64)
         Bkm[:3,:3] = -Hi @ Sig.T
         Bkm[3:,:3] = Sk.T @ so3.hat_map(sig)
         Bkm[3:,3:] = -Sk.T
@@ -67,13 +69,17 @@ def coordinate_transformation(muk0s,sks):
         Pbar[k*6+3:k*6+6] = Sk.T @ (sig-sk)
     return B, Pbar
 
-def coordinate_transformation_correction(muk0s,sks,Z_delta_ref):
+def coordinate_transformation_correction(
+    muk0s: np.ndarray, 
+    sks: np.ndarray,
+    Z_delta_ref: np.ndarray
+    ) -> tuple[np.ndarray,np.ndarray]:
     
     if len(Z_delta_ref.shape) < 2:
         Z_delta_ref = Z_delta_ref.reshape((len(Z_delta_ref)//6,6))
     
-    B = np.zeros((len(sks)*6,len(muk0s)*6))
-    Pbar = np.zeros(len(sks)*6)
+    B = np.zeros((len(sks)*6,len(muk0s)*6), dtype=np.float64)
+    Pbar = np.zeros(len(sks)*6, dtype=np.float64)
     for k in range(len(sks)):
         sig0 = np.linalg.inv(muk0s[k]) @ muk0s[k+1]
         SIG  = sig0[:3,:3]
@@ -87,8 +93,8 @@ def coordinate_transformation_correction(muk0s,sks,Z_delta_ref):
         Z0k = so3.euler2rotmat(Z_delta_ref[k,:3])
         htheta0 = so3.hat_map(Z_delta_ref[k,:3])
         
-        Bkm = np.zeros((6,6))
-        Bkp = np.zeros((6,6))
+        Bkm = np.zeros((6,6), dtype=np.float64)
+        Bkp = np.zeros((6,6), dtype=np.float64)
         
         Bkm[:3,:3] = -Hi @ SIG.T
         Bkm[3:,:3] = Sk.T @ so3.hat_map(sig)
@@ -112,9 +118,9 @@ def sc_free_energy(
     nuc_K_full: np.ndarray,
     left_open: int = 0,
     right_open: int = 0,
-    base_midstep_locations: List[int] = None,
+    base_midstep_locations: list[int] = None,
     use_correction: bool = True,
-) -> np.ndarray:
+) -> dict[str]:
 
     midstep_constraint_locations = get_midstep_locations(left_open, right_open, base_midstep_locations=base_midstep_locations)
     if len(midstep_constraint_locations) <= 1:
@@ -131,7 +137,7 @@ def sc_free_energy(
             'F_jacob'   : 0,
             'F_freedna' : F,
             'dF'        : 0,
-            'gs': np.zeros(free_gs.shape),
+            'gs': np.zeros(free_gs.shape, dtype=np.float64),
             'alphas' : None
         }
         return Fdict

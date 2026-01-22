@@ -4,7 +4,7 @@ from .SO3 import so3
 def read_nucleosome_triads(fn: str) -> np.ndarray:
     data = np.loadtxt(fn)
     N = len(data) // 12
-    nuctriads = np.zeros((N,4,4))
+    nuctriads = np.zeros((N,4,4), dtype=np.float64)
     for i in range(N):
         tau = np.eye(4)
         pos   = data[i*12:i*12+3] / 10

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys, os
 import numpy as np
 import scipy as sp
@@ -13,10 +15,10 @@ from .midstep_composites import calculate_midstep_triads, midstep_excess_vals
 def hc_free_energy(
     intrinsic_groundstate: np.ndarray,
     stiffmat: np.ndarray,
-    midstep_constraint_locations: List[int],  # index of the lower (left-hand) triad neighboring the constraint midstep-triad
+    midstep_constraint_locations: list[int],  # index of the lower (left-hand) triad neighboring the constraint midstep-triad
     nucleosome_triads: np.ndarray,
     use_correction: bool = True,
-) -> np.ndarray:
+) -> dict[str]:
     
     if len(midstep_constraint_locations) == 0:
         n = len(stiffmat)
@@ -33,7 +35,7 @@ def hc_free_energy(
             'F_jacob'    : 0,
             'F_freedna'  : F,
             'dF'         : 0,
-            'gs'         : np.zeros(n)
+            'gs'         : np.zeros(n, dtype=np.float64)
         }
         return Fdict
     
