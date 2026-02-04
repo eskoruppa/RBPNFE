@@ -3,7 +3,7 @@ A python module for the evaluation of nucleosome positioning free energies.
 
 Clone with all submodules
 ```console
-git clone --recurse-submodules -j8 git@github.com:eskoruppa/RBPNFE.git
+git clone --recurse-submodules -j8 https://github.com/eskoruppa/RBPNFE.git
 ```
 
 

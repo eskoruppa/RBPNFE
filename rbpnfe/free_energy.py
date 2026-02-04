@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from typing import List, Tuple, Callable, Any, Dict
 
-from .hcmodel import hc_free_energy
+from .hcmodel import hc_free_energy, hc_mut_free_energy
 from .scmodel import sc_free_energy
 
 from .midstep_composites import calculate_midstep_triads
@@ -118,6 +118,70 @@ class NucFreeEnergy:
             )
             
         else:
+            nucout = sc_free_energy(
+                gs,
+                stiff,    
+                self.nuc_mu0,
+                self.Kmat,
+                left_open=open_left,
+                right_open=open_right,
+                base_midstep_locations=self.midstep_locations,
+                use_correction=use_correction
+            )       
+        return nucout
+    
+
+    def mut_eval(
+        self, 
+        seq: str,
+        bound_locations: list[int],
+        open_left: int = 0,
+        open_right: int = 0, 
+        shl_open_left:  int | None = None,
+        shl_open_right: int | None = None,
+        use_correction: bool = True
+        ) -> dict[str]:
+        """
+        Evaluate nucleosome free energy for a given sequence and open binding sites.
+
+        Args:
+            seq (str): DNA sequence of length 147 bp.
+            open_left (int, optional): Number of open binding sites on the left. Defaults to 0.
+            open_right (int, optional): Number of open binding sites on the right. Defaults to 0.
+            shl_open_left (int | None, optional): Number of open superhelical locations on the left. Defaults to None.
+            shl_open_right (int | None, optional): Number of open superhelical locations on the right. Defaults to None.
+            use_correction (bool, optional): Whether to use correction in free energy calculation. Defaults to True.
+
+        Returns:
+            dict[str]: Dictionary containing free energy components.
+        """
+        
+        if shl_open_left is not None:
+            open_left  = shl_open_left * 2
+        if shl_open_right is not None:
+            open_right = shl_open_right * 2
+            
+        if open_left + open_right > 28:
+            raise ValueError('The number of open binding sites cannot exceed 28')
+        
+        if len(seq) != 147:
+            raise ValueError(f'Provided sequence needs to be of length 147. Provided sequence has length {len(seq)}')
+        
+        gs,stiff = self.gen_params(seq,flanking=self.flanking)
+        if self.hardconstraint:
+            boundloc = bound_locations[open_left:len(self.midstep_locations)-open_right]
+            midloc = self.midstep_locations[open_left:len(self.midstep_locations)-open_right]
+            nucout  = hc_mut_free_energy(
+                gs,
+                stiff,
+                boundloc,
+                midloc, 
+                self.nuctriads,
+                use_correction=use_correction
+            )
+            
+        else:
+            raise NotImplementedError('Mutational evaluation currently only supports hard-constraint model')
             nucout = sc_free_energy(
                 gs,
                 stiff,    
