@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-import sys, os
 import numpy as np
-from typing import List, Tuple, Callable, Any, Dict
-
 from .PolyCG.polycg.SO3 import so3
-# from .PolyCG.polycg.transforms.transform_SO3 import euler2rotmat_so3
-# from .PolyCG.polycg.transforms.transform_marginals import send_to_back_permutation
 
 
 def calculate_midstep_triads(
@@ -40,7 +35,7 @@ def midstep_composition_excess(
 
 def midstep_excess_vals(
     groundstate: np.ndarray,
-    midstep_constraint_locations: List[int],
+    midstep_constraint_locations: list[int],
     midstep_triads: np.ndarray  
 ) -> np.ndarray:
     num = len(midstep_constraint_locations)-1
@@ -57,7 +52,7 @@ def midstep_excess_vals(
 
 def midstep_groundstate_se3(
     gs: np.ndarray, 
-    midstep_locs: List[int]
+    midstep_locs: list[int]
     ) -> np.ndarray:
     num = len(midstep_locs)-1
     sks = np.zeros((num,4,4), dtype=np.float64)
@@ -83,7 +78,7 @@ def rot_accu(rots: np.ndarray,i,j) -> np.ndarray:
 
 def midstep_groundstate(
     gs: np.ndarray ,
-    midstep_locs: List[int]
+    midstep_locs: list[int]
     ) -> np.ndarray:
     num = len(midstep_locs)-1
     mid_gs = np.zeros((num,6), dtype=np.float64)
@@ -126,7 +121,7 @@ def midstep_se3_groundstate(groundstate: np.ndarray) -> np.ndarray:
 
 def midstep_composition_transformation(
     intrinsic_groundstate: np.ndarray,
-    midstep_constraint_locations: List[int],
+    midstep_constraint_locations: list[int],
 ) -> tuple[np.ndarray,list[int]]:
     N = len(intrinsic_groundstate)
     mat = np.eye(N*6)
@@ -140,6 +135,7 @@ def midstep_composition_transformation(
         mat[replace_id*6:replace_id*6+6,id1*6:id2*6+6] = midstep_comp_block
         replaced_ids.append(replace_id)
     return mat, replaced_ids
+
 
 def midstep_composition_block_first_order(
     groundstate: np.ndarray
@@ -401,6 +397,3 @@ def midstep_composition_block_correction(
             const[3:] += prefac @ ( (drots[l] - np.eye(3)) @ s_lj[l+1] +  hspdlamHmat @ Phid0[l] ) 
     
     return comp_block,const
-
-
-
