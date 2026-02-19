@@ -7,3 +7,6 @@
 [submodule "rbpnfe/SO3"]
 	path = rbpnfe/SO3
 	url = git@github.com:eskoruppa/SO3
+[submodule "rbpnfe/CompSE3"]
+	path = rbpnfe/CompSE3
+	url = git@github.com:eskoruppa/CompSE3

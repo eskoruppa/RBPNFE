@@ -106,12 +106,8 @@ def midstep_se3_groundstate(groundstate: np.ndarray) -> np.ndarray:
         srots[l] = so3.euler2rotmat(Phi0s[l])   
     # assign translation vectors
     trans = np.copy(groundstate[:,3:])
-    # trans[0] = 0.5*trans[0]
-    # trans[-1] = 0.5* srots[-1].T @ trans[-1]
-
-    trans[0] = 0.5 * srots[0].T @ trans[0]
-    trans[-1] = 0.5 * trans[-1]
-
+    trans[0] = 0.5*trans[0]
+    trans[-1] = 0.5* srots[-1].T @ trans[-1]
     
     Smats = np.zeros((N,4,4), dtype=np.float64)
     for i in range(N):
@@ -160,8 +156,8 @@ def midstep_composition_block_first_order(
     
     # assign translation vectors
     trans = np.copy(groundstate[:,3:])
-    trans[0] = 0.5* srots[0].T @ trans[0]
-    trans[-1] = 0.5*trans[-1] 
+    trans[0] = 0.5*trans[0]
+    trans[-1] = 0.5* srots[-1].T @ trans[-1]
     
     ndims = 6
     N = len(groundstate)
@@ -354,10 +350,9 @@ def midstep_composition_block_correction(
     const      = np.zeros(6, dtype=np.float64)
 
     ################################  
-    # compute blocks
+    # set middle blocks (i < k < j)
     for l in range(i,j+1):
-        prefac_trans = S_lj[i].T @ rot_accu(Rrots,i,l-1) @ srots[l]
-        prefac_coup = S_lj[i].T @ rot_accu(Rrots,i,l)
+        prefac = S_lj[i].T @ rot_accu(Rrots,i,l-1) @ srots[l]
 
         if l == i:
             Phi_0 = Phi0s[0]
@@ -368,26 +363,15 @@ def midstep_composition_block_correction(
             # rot
             comp_block[:3,l*6:l*6+3] = 0.5 * S_lj[l+1].T @ Hprod
             # trans
-            comp_block[3:,l*6+3:l*6+6] = 0.5 * prefac_trans
+            comp_block[3:,l*6+3:l*6+6] = 0.5 * prefac
             # coupling and constant
             phid0_i = 0.5 * Hprod @ Phid0[0]            
             Hmat    = so3.splittransform_algebra2group(phid0_i)
-            hspdlamHmat = so3.hat_map(lambdak[l]) + so3.hat_map(s_lj[l+1])
-            
-            
-            # rot-trans coupling: two terms
-            # Term 1: from corrected composite C_0 * (1/2) * Hprod
-            coup_corr = -0.5 * prefac_coup @ hspdlamHmat @ Hmat @ Hprod
-            # Term 2: from A^(C)[3:,3:] * A^RH[3:,:3]
-            # A^RH contributes (1/4) * S_full^T * hat(v_full) * sqrt(S) * Hprod
-            # where S_full = sqrt(S)^2 and sqrt(S) = srots[0]
-            v_full = groundstate[0, 3:]
-            S_full_T = (srots[0] @ srots[0]).T
-            coup_rh = 0.25 * prefac_trans @ S_full_T @ so3.hat_map(v_full) @ srots[0] @ Hprod
-            comp_block[3:,l*6:l*6+3] = coup_corr + coup_rh
-            
-            # # rot-trans coupling
-            const[3:] += prefac_trans @ (drots[l] - np.eye(3)) @ s_lj[l+1] + prefac_coup @ hspdlamHmat @ Hmat @ phid0_i
+            hspdlamHmat = so3.hat_map(s_lj[l+1]) + drots[l] @ so3.hat_map(lambdak[l]) @ Hmat
+            # rot-trans coupling
+            comp_block[3:,l*6:l*6+3]   = -0.5 * prefac @ hspdlamHmat @ Hprod
+            # const
+            const[3:] += prefac @ ( (drots[l] - np.eye(3)) @ s_lj[l+1] +  hspdlamHmat @ phid0_i ) 
                         
         elif l == j:
             Phi_0 = Phi0s[-1]
@@ -397,20 +381,19 @@ def midstep_composition_block_correction(
             # rot
             comp_block[:3,l*6:l*6+3] = 0.5 * Hprod
             # trans
-            # comp_block[3:,l*6+3:l*6+6] = 0.5 * prefac_trans
-            comp_block[3:,l*6+3:l*6+6] = prefac_trans @ (0.5 * srots[-1])
+            comp_block[3:,l*6+3:l*6+6] = 0.5 * prefac
             # no constant
         else:
             # rot
             comp_block[:3,l*6:l*6+3]   = S_lj[l+1].T
             # trans
-            comp_block[3:,l*6+3:l*6+6] = prefac_trans
+            comp_block[3:,l*6+3:l*6+6] = prefac
             # coupling and constant
             Hmat = so3.splittransform_algebra2group(Phid0[l])
-            hspdlamHmat = so3.hat_map(lambdak[l]) + so3.hat_map(s_lj[l+1])
+            hspdlamHmat = so3.hat_map(s_lj[l+1]) + drots[l] @ so3.hat_map(lambdak[l]) @ Hmat
             # rot-trans coupling
-            comp_block[3:,l*6:l*6+3] = -prefac_coup @ hspdlamHmat @ Hmat
+            comp_block[3:,l*6:l*6+3] = -prefac @ hspdlamHmat
             # const
-            const[3:] += prefac_trans @ (drots[l] - np.eye(3)) @ s_lj[l+1] + prefac_coup @ hspdlamHmat @ Hmat @ Phid0[l]
+            const[3:] += prefac @ ( (drots[l] - np.eye(3)) @ s_lj[l+1] +  hspdlamHmat @ Phid0[l] ) 
     
     return comp_block,const
