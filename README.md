@@ -6,11 +6,6 @@ Clone with all submodules
 git clone --recurse-submodules -j8 https://github.com/eskoruppa/RBPNFE.git
 ```
 
-If you already cloned without submodules, populate them with
-```console
-git submodule update --init --recursive
-```
-
 
 ## Basic Function
 
