@@ -1,9 +1,6 @@
----
----
 # RBPNFE
 A python module for the evaluation of nucleosome positioning free energies.
----
----
+
 
 Clone with all submodules
 ```console
