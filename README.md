@@ -209,12 +209,9 @@ In addition to every `eval` option (`shl_open_left`, `shl_open_right`, `open_lef
     `Nnucs = len(seq) - 147 + 1` positions.
 
 - `ncores` (int, default `1`):
-    Number of parallel worker **processes** used for the position scan. `1` runs serially.
-    Parallelism is process-based (not thread-based) because each per-position evaluation is
-    dominated by GIL-holding Python code, so threads barely speed it up while processes scale
-    close to linearly. Uses the POSIX `fork` start method, so workers inherit the ground state
-    and stiffness matrix via copy-on-write (no per-task pickling). Keep the BLAS thread
-    environment variables at `1` (see the example) so the workers do not oversubscribe the cores.
+    Number of parallel worker processes used for the position scan (`1` runs serially).
+    Limiting numpy to a single core (see the BLAS environment variables in the example) is
+    recommended to avoid oversubscribing the cores.
 
 - `verbose` (bool, default `False`):
     Print a detailed line per position (free-energy components, timing). Takes precedence over
