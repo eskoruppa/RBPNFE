@@ -16,7 +16,7 @@ import rbpnfe
 
 params_model = 'md'
 params_model = 'cgnaplus'
-hard_constraint = True
+hard_constraint = False
 ncores = 4
 verbose = False
 use_correction = True

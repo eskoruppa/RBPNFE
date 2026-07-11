@@ -26,3 +26,6 @@
 
 # ignore egg-info directory
 **.egg-info/
+
+# ignore python scripts
+**fit_factors.py

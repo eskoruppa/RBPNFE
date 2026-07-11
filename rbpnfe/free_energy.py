@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys, os, time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing as mp
 import numpy as np
 import scipy as sp
@@ -18,16 +18,10 @@ from .RBPStiff.read_params import GenStiffness
 from .PolyCG.polycg.cgnaplus import cgnaplus_bps_params
 from .PolyCG.polycg.gen_params import gen_params as cgnap_gen_params
 from .utils.rescale_stiffness import rescale_stiff_dofs
+from .PolyCG.polycg.utils.console_output import ProgressBar
 
 
-# Shared read-only context for the process-parallel landscape evaluation. It is
-# populated in the parent process immediately before the worker pool is forked,
-# so (on POSIX 'fork') each worker inherits the ground state, stiffness matrix
-# and NucFreeEnergy instance via copy-on-write memory rather than pickling them
-# per task. Workers therefore only receive an integer position index.
 _LANDSCAPE_CTX: dict = {}
-
-
 def _landscape_worker(i: int) -> tuple[int, float, float, float]:
     ctx = _LANDSCAPE_CTX
     nfe     = ctx['nfe']
@@ -50,8 +44,6 @@ def _landscape_worker(i: int) -> tuple[int, float, float, float]:
     if verbose:
         t2 = time.time()
         seq = ctx['seq']
-        # flush=True so lines from the worker processes reach the terminal
-        # promptly (they still interleave across workers / arrive out of order).
         print(f'Position {i}: {seq[i:i+147]} | Free Energy: {nfe_out["F"]:.2f} kT | Enthalpy: {nfe_out["F_enthalpy"]:.2f} kT | Time: {t2-t1:.4f} s', flush=True)
     return i, nfe_out['F'], nfe_out['F_fluctuation'], nfe_out['F_enthalpy']
 
@@ -251,7 +243,8 @@ class NucFreeEnergy:
         shl_open_right: int | None = None,
         use_correction: bool = True,
         ncores: int = 1,
-        verbose: bool = False
+        verbose: bool = False,
+        progress: bool = True
         ) -> dict[str]:
         
         if shl_open_left is not None:
@@ -290,12 +283,24 @@ class NucFreeEnergy:
                 print(f'Position {i}: {seq[i:i+147]} | Free Energy: {nfe["F"]:.2f} kT | Enthalpy: {nfe["F_enthalpy"]:.2f} kT | Time: {t2-t1:.4f} s')
             return i, nfe['F'], nfe['F_fluctuation'], nfe['F_enthalpy']
 
-        # Dispatch the per-position evaluations across ncores worker *processes*.
-        # Process-based parallelism (not threads) is used because each evaluation
-        # is dominated by GIL-holding Python code in CompSE3; threads give almost
-        # no speedup while processes scale ~linearly. Each task reads disjoint
-        # slices of gs/stiff, so no shared state is mutated. ncores=1 runs
-        # serially in this process.
+        show_bar = progress and not verbose
+        bar = None
+        if show_bar:
+            # flush=True and an immediate 0% frame so the header and bar appear
+            # right away, even when the first position is slow to evaluate (e.g.
+            # the soft-constraint model) or stdout is block-buffered.
+            print(f'Computing Free Energy Landscape for {len(seq)} base pair sequence ({Nnucs} positions)', flush=True)
+            bar = ProgressBar(Nnucs, prefix='Progress:', show_eta=True)
+            bar.update(0, suffix=f'Position 0/{Nnucs}')
+
+        def _store(done: int, res: tuple[int, float, float, float]) -> None:
+            i, F, F_fluctuation, F_enthalpy = res
+            fes[i, 0] = F
+            fes[i, 1] = F_fluctuation
+            fes[i, 2] = F_enthalpy
+            if bar is not None:
+                bar.update(done, suffix=f'Position {done}/{Nnucs}')
+
         if ncores > 1:
             _LANDSCAPE_CTX.update(
                 nfe=self,
@@ -309,24 +314,20 @@ class NucFreeEnergy:
                 use_correction=use_correction,
                 verbose=verbose,
             )
-            # Force 'fork' so workers inherit _LANDSCAPE_CTX (and gs/stiff) via
-            # copy-on-write instead of pickling the stiffness matrix per task.
             mp_context = mp.get_context('fork')
-            chunksize = max(1, Nnucs // (ncores * 4))
             try:
                 with ProcessPoolExecutor(max_workers=min(ncores, Nnucs),
                                          mp_context=mp_context) as executor:
-                    results = list(executor.map(_landscape_worker,
-                                                range(Nnucs), chunksize=chunksize))
+                    futures = [executor.submit(_landscape_worker, i)
+                               for i in range(Nnucs)]
+                    for done, future in enumerate(as_completed(futures), start=1):
+                        _store(done, future.result())
             finally:
                 _LANDSCAPE_CTX.clear()
         else:
-            results = map(_eval_position, range(Nnucs))
+            for done, i in enumerate(range(Nnucs), start=1):
+                _store(done, _eval_position(i))
 
-        for i, F, F_fluctuation, F_enthalpy in results:
-            fes[i,0] = F
-            fes[i,1] = F_fluctuation
-            fes[i,2] = F_enthalpy
         return fes
 
     
