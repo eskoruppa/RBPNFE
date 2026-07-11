@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-import sys, os
+import sys, os, time
+from concurrent.futures import ProcessPoolExecutor
+import multiprocessing as mp
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from typing import List, Tuple, Callable, Any, Dict
+from typing import List, Tuple, Callable, Any, Dict, Sequence
 
 from .hcmodel import hc_free_energy, hc_fe_compse3
 from .scmodel import sc_free_energy
@@ -14,6 +16,44 @@ from .midstep_composites import calculate_midstep_triads
 from .nuctriads import read_nucleosome_triads
 from .RBPStiff.read_params import GenStiffness
 from .PolyCG.polycg.cgnaplus import cgnaplus_bps_params
+from .PolyCG.polycg.gen_params import gen_params as cgnap_gen_params
+from .utils.rescale_stiffness import rescale_stiff_dofs
+
+
+# Shared read-only context for the process-parallel landscape evaluation. It is
+# populated in the parent process immediately before the worker pool is forked,
+# so (on POSIX 'fork') each worker inherits the ground state, stiffness matrix
+# and NucFreeEnergy instance via copy-on-write memory rather than pickling them
+# per task. Workers therefore only receive an integer position index.
+_LANDSCAPE_CTX: dict = {}
+
+
+def _landscape_worker(i: int) -> tuple[int, float, float, float]:
+    ctx = _LANDSCAPE_CTX
+    nfe     = ctx['nfe']
+    gs      = ctx['gs']
+    stiff   = ctx['stiff']
+    verbose = ctx['verbose']
+    if verbose:
+        t1 = time.time()
+    pgs    = gs[i:i+147]
+    pstiff = stiff[6*i:6*(i+147), 6*i:6*(i+147)]
+    nfe_out = nfe._eval_single(
+        pgs,
+        pstiff,
+        open_left=ctx['open_left'],
+        open_right=ctx['open_right'],
+        shl_open_left=ctx['shl_open_left'],
+        shl_open_right=ctx['shl_open_right'],
+        use_correction=ctx['use_correction'],
+    )
+    if verbose:
+        t2 = time.time()
+        seq = ctx['seq']
+        # flush=True so lines from the worker processes reach the terminal
+        # promptly (they still interleave across workers / arrive out of order).
+        print(f'Position {i}: {seq[i:i+147]} | Free Energy: {nfe_out["F"]:.2f} kT | Enthalpy: {nfe_out["F_enthalpy"]:.2f} kT | Time: {t2-t1:.4f} s', flush=True)
+    return i, nfe_out['F'], nfe_out['F_fluctuation'], nfe_out['F_enthalpy']
 
 
 class NucFreeEnergy:
@@ -39,7 +79,9 @@ class NucFreeEnergy:
         triadfn: str = None,
         Kmat_file: str = None,
         flanking: int = 10,
-        mode: str = 'compse3'
+        mode: str = 'compse3',
+        cgnaplus_setname: str = 'curves_plus',
+        rescale_factors: Sequence[float] | None = None,
         ):
         
         # parameter config        
@@ -72,6 +114,85 @@ class NucFreeEnergy:
         )
 
         self.eval_mode = mode.lower()
+        self.cgnaplus_setname = cgnaplus_setname
+        self.rescale_factors = rescale_factors
+
+        if self.rescale_factors is not None:
+            rescale_arr = np.asarray(self.rescale_factors, dtype=float)
+            if rescale_arr.ndim != 1 or rescale_arr.shape[0] != 6:
+                raise ValueError(
+                    f'rescale_factors must be a sequence of length 6, '
+                    f'got {self.rescale_factors}'
+                )
+            if not np.all(rescale_arr > 0):
+                raise ValueError(
+                    f'rescale_factors must contain only positive entries, '
+                    f'got {self.rescale_factors}'
+                )
+
+
+    
+    def _eval_single(
+        self,
+        gs: np.ndarray,
+        stiff: np.ndarray,
+        open_left: int = 0,
+        open_right: int = 0,
+        shl_open_left:  int | None = None,
+        shl_open_right: int | None = None,
+        use_correction: bool = True
+    ) -> dict[str]:
+        
+        if len(gs) < 146:
+            raise ValueError(f'Provided sequence needs to be of length 147. Provided sequence has length {len(gs)+1}')
+        
+        if stiff.shape[0] != 6*len(gs) or stiff.shape[1] != 6*len(gs):
+            raise ValueError(f'Provided stiffness matrix needs to be of shape (6*len(seq),6*len(seq)). Provided stiffness matrix has shape {stiff.shape}')
+
+
+        if shl_open_left is not None:
+            open_left  = shl_open_left * 2
+        if shl_open_right is not None:
+            open_right = shl_open_right * 2
+            
+        if open_left + open_right > 28:
+            raise ValueError('The number of open binding sites cannot exceed 28')
+        
+        if self.hardconstraint:
+            midloc = self.midstep_locations[open_left:len(self.midstep_locations)-open_right]
+            
+            if self.eval_mode == 'compse3':
+                nucout = hc_fe_compse3(
+                    gs,
+                    stiff,
+                    midloc, 
+                    self.nuctriads,
+                    use_correction=use_correction
+                )
+            elif self.eval_mode == 'legacy':
+                nucout  = hc_free_energy(
+                    gs,
+                    stiff,
+                    midloc, 
+                    self.nuctriads,
+                    use_correction=use_correction
+                )
+            else:
+                raise ValueError(f'Unknown eval_mode for hard constraint "{self.eval_mode}"')
+            
+        else:
+            nucout = sc_free_energy(
+                gs,
+                stiff,    
+                self.nuc_mu0,
+                self.Kmat,
+                left_open=open_left,
+                right_open=open_right,
+                base_midstep_locations=self.midstep_locations,
+                use_correction=use_correction
+            )       
+        return nucout
+        
     
 
     def eval(
@@ -110,40 +231,104 @@ class NucFreeEnergy:
             raise ValueError(f'Provided sequence needs to be of length 147. Provided sequence has length {len(seq)}')
         
         gs,stiff = self.gen_params(seq,flanking=self.flanking)
-        if self.hardconstraint:
-            midloc = self.midstep_locations[open_left:len(self.midstep_locations)-open_right]
+        return self._eval_single(
+            gs,
+            stiff,
+            open_left=open_left,
+            open_right=open_right,
+            shl_open_left=shl_open_left,
+            shl_open_right=shl_open_right,
+            use_correction=use_correction
+        )
+    
+
+    def eval_landscape(
+        self, 
+        seq: str,
+        open_left: int = 0,
+        open_right: int = 0, 
+        shl_open_left:  int | None = None,
+        shl_open_right: int | None = None,
+        use_correction: bool = True,
+        ncores: int = 1,
+        verbose: bool = False
+        ) -> dict[str]:
+        
+        if shl_open_left is not None:
+            open_left  = shl_open_left * 2
+        if shl_open_right is not None:
+            open_right = shl_open_right * 2
             
-            if self.eval_mode == 'compse3':
-                nucout = hc_fe_compse3(
-                    gs,
-                    stiff,
-                    midloc, 
-                    self.nuctriads,
+        if open_left + open_right > 28:
+            raise ValueError('The number of open binding sites cannot exceed 28')
+        
+        gs,stiff = self.gen_params(seq,flanking=self.flanking)
+        Nnucs = len(seq) - 147 + 1
+        if Nnucs < 1:
+            raise ValueError(f'Provided sequence needs to be of length at least 147. Provided sequence has length {len(seq)}')
+        
+        fes = np.zeros((Nnucs,3), dtype=np.float64)
+
+        if ncores < 1:
+            raise ValueError(f'ncores must be a positive integer, got {ncores}')
+
+        def _eval_position(i: int) -> tuple[int, float, float, float]:
+            if verbose: t1 = time.time()
+            pgs = gs[i:i+147]
+            pstiff = stiff[6*i:6*(i+147),6*i:6*(i+147)]
+            nfe = self._eval_single(
+                    pgs,
+                    pstiff,
+                    open_left=open_left,
+                    open_right=open_right,
+                    shl_open_left=shl_open_left,
+                    shl_open_right=shl_open_right,
                     use_correction=use_correction
                 )
-            elif self.eval_mode == 'legacy':
-                nucout  = hc_free_energy(
-                    gs,
-                    stiff,
-                    midloc, 
-                    self.nuctriads,
-                    use_correction=use_correction
-                )
-            else:
-                raise ValueError(f'Unknown eval_mode for hard constraint "{self.eval_mode}"')
-            
+            if verbose:
+                t2 = time.time()
+                print(f'Position {i}: {seq[i:i+147]} | Free Energy: {nfe["F"]:.2f} kT | Enthalpy: {nfe["F_enthalpy"]:.2f} kT | Time: {t2-t1:.4f} s')
+            return i, nfe['F'], nfe['F_fluctuation'], nfe['F_enthalpy']
+
+        # Dispatch the per-position evaluations across ncores worker *processes*.
+        # Process-based parallelism (not threads) is used because each evaluation
+        # is dominated by GIL-holding Python code in CompSE3; threads give almost
+        # no speedup while processes scale ~linearly. Each task reads disjoint
+        # slices of gs/stiff, so no shared state is mutated. ncores=1 runs
+        # serially in this process.
+        if ncores > 1:
+            _LANDSCAPE_CTX.update(
+                nfe=self,
+                gs=gs,
+                stiff=stiff,
+                seq=seq,
+                open_left=open_left,
+                open_right=open_right,
+                shl_open_left=shl_open_left,
+                shl_open_right=shl_open_right,
+                use_correction=use_correction,
+                verbose=verbose,
+            )
+            # Force 'fork' so workers inherit _LANDSCAPE_CTX (and gs/stiff) via
+            # copy-on-write instead of pickling the stiffness matrix per task.
+            mp_context = mp.get_context('fork')
+            chunksize = max(1, Nnucs // (ncores * 4))
+            try:
+                with ProcessPoolExecutor(max_workers=min(ncores, Nnucs),
+                                         mp_context=mp_context) as executor:
+                    results = list(executor.map(_landscape_worker,
+                                                range(Nnucs), chunksize=chunksize))
+            finally:
+                _LANDSCAPE_CTX.clear()
         else:
-            nucout = sc_free_energy(
-                gs,
-                stiff,    
-                self.nuc_mu0,
-                self.Kmat,
-                left_open=open_left,
-                right_open=open_right,
-                base_midstep_locations=self.midstep_locations,
-                use_correction=use_correction
-            )       
-        return nucout
+            results = map(_eval_position, range(Nnucs))
+
+        for i, F, F_fluctuation, F_enthalpy in results:
+            fes[i,0] = F
+            fes[i,1] = F_fluctuation
+            fes[i,2] = F_enthalpy
+        return fes
+
     
         
     def gen_params(self,seq: str,flanking: int=10) -> tuple[np.ndarray,np.ndarray]:
@@ -151,16 +336,34 @@ class NucFreeEnergy:
             if flanking > 0:
                 flank = ('CG' * int(np.ceil(flanking / 2)))[:flanking]
                 fseq = flank + seq + flank
-                gs,stiff = cgnaplus_bps_params(fseq,group_split=True)
-                # stiff *= 0.75
+            else:
+                fseq = seq
+
+            if len(seq) > 200: 
+                gs, stiff = cgnap_gen_params(
+                    'cgnaplus',
+                    fseq, 
+                    cgnap_setname=self.cgnaplus_setname,
+                    verbose=True).get_params()
+
+            else:
+                gs,stiff = cgnaplus_bps_params(
+                    fseq,
+                    group_split=True,
+                    parameter_set_name = self.cgnaplus_setname)
+                
+            if flanking > 0:
                 stiff = stiff[6*flanking:-6*flanking,6*flanking:-6*flanking]
                 gs = gs[flanking:-flanking]
-            else:
-                gs,stiff = cgnaplus_bps_params(seq,group_split=True)     
+
         else:
             prms = self.genstiff.gen_params(seq,use_group=True)
             gs    = prms['groundstate']
             stiff = prms['stiffness']
+
+        if self.rescale_factors is not None:
+            stiff = rescale_stiff_dofs(stiff, self.rescale_factors)
+        
         return gs,stiff
 
 
