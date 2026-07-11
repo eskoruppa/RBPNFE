@@ -222,20 +222,11 @@ In addition to every `eval` option (`shl_open_left`, `shl_open_right`, `open_lef
     environment variables at `1` (see the example) so the workers do not oversubscribe the cores.
 
 - `verbose` (bool, default `False`):
-    Print a detailed line per position (index, subsequence, free-energy components, timing).
-    Under `ncores > 1` these lines interleave and arrive out of order, but the returned array
-    stays correctly ordered. When enabled it takes precedence over `progress` (the compact bar
-    is suppressed to avoid clashing output).
+    Print a detailed line per position (free-energy components, timing). Takes precedence over
+    `progress`. Under `ncores > 1` the lines arrive out of order; the returned array stays ordered.
 
 - `progress` (bool, default `True`):
-    Show a live progress bar (same style as `gen_params`) that advances as positions complete
-    and displays an ETA, for both serial and parallel runs:
-
-    ```
-    Progress: |████████████████████| 100.0% Position 254/254 ETA 00:00 (elapsed 00:11)
-    ```
-
-    Automatically suppressed when `verbose=True`.
+    Show a live progress bar with an ETA (suppressed when `verbose=True`).
 
 ### Return value
 
