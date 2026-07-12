@@ -34,26 +34,3 @@ nout = nfe.eval(
 print(f'Full Free Energy:         {nout["F"]:.2f} kT')
 print(f'Fluctuation Contribution: {nout["F_fluctuation"]:.2f} kT')
 print(f'Enthalpic Contribution:   {nout["F_enthalpy"]:.2f} kT')
-
-
-import numpy as np
-import time
-nbp = 500
-seqs = ''.join(['ATCG'[np.random.randint(4)] for i in range(nbp)])
-
-for i in range(len(seqs)-len(seq)+1):
-    subseq = seqs[i:i+len(seq)]
-    t1 = time.time()
-    nout = nfe.eval(
-        subseq,
-        shl_open_left = shl_open_left,
-        shl_open_right = shl_open_right,
-        use_correction = True,
-        )
-    t2 = time.time()
-    # print(f'Position {i}: {subseq} | Free Energy: {nout["F"]:.2f} kT | Time: {t2-t1:.4f} s')
-    print(f'Position {i}: {subseq} | Enthalpy: {nout["F_enthalpy"]:.2f} kT  | Time: {t2-t1:.4f} s')
-    # print(f'Position {i}: {subseq} | Free Energy: {nout["F"]:.2f} kT | Fluctuation: {nout["F_fluctuation"]:.2f} kT | Enthalpy: {nout["F_enthalpy"]:.2f} kT | Time: {t2-t1:.4f} s')
-
-    # print(f'Position {i}: {subseq} | Enthalpy: {nout["F_enthalpy"]:.2f} kT')
-    # # print(f'Position {i}: {subseq} | Free Energy: {nout["F"]:.2f} kT')
