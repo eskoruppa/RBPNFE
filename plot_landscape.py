@@ -98,7 +98,7 @@ ax1 = axes[0]
 ax2 = axes[1]
 ax3 = axes[2]
 
-nbp = 1147
+nbp = 300
 seq = ''.join(['ATCG'[np.random.randint(4)] for i in range(nbp)])
 
 # seq = "CG"*125
@@ -159,6 +159,8 @@ factors = [0.65,0.65,0.75,0.5,0.5,0.2]
 factors=[0.4220, 0.6619, 0.1556, 0.0626, 0.3414, 0.4118]
 factors = None
 factors=[0.52, 0.52, 0.62, 0.7, 0.7, 0.5]
+factors = [0.6,0.6,0.70,1.0,1.0,0.4]
+
 
 nfe = rbpnfe.NucFreeEnergy(
     params_model = params_model,
@@ -243,6 +245,7 @@ plt.subplots_adjust(left=0.12,
                     wspace=0.5,
                     hspace=0.3)
 
+os.makedirs('figs', exist_ok=True)
 savefn = f'figs/landscape_comparison_{nbp}bp'
 
 fig.savefig(savefn+'.pdf',dpi=300,transparent=True)
