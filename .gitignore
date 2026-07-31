@@ -33,3 +33,6 @@
 # ignore notebooks
 **.ipynb_checkpoints/
 **.ipynb
+
+# ignore docs 
+docs/**

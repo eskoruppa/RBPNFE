@@ -227,6 +227,111 @@ In addition to every `eval` option (`shl_open_left`, `shl_open_right`, `open_lef
 `[F, F_fluctuation, F_enthalpy]` (in kT), one row per window position.
 
 
+## Multiharmonic Model
+
+`NucleosomeBreath` evaluates nucleosome breathing free energies using two
+parameter sets: one for the nucleosome-bound DNA and one for the free-DNA
+reference.
+
+```python
+import rbpnfe
+
+nb = rbpnfe.NucleosomeBreath(
+    nuc_method      = 'cgna+',   # elastic model for the bound DNA
+    free_dna_method = 'md',      # elastic model for the free-DNA reference
+    hardconstraint  = False,
+    )
+
+res = nb.calculate_free_energy_soft(seq601=seq, left=0, right=13)
+print(f'{res.F:.2f} kT   dF = {res.dF:.2f} kT')
+
+# all 105 breathing states in one call, parameters generated once
+states = [(l, r) for l in range(14) for r in range(l, 14)]
+results = nb.calculate_free_energy_soft_batch(seq601=seq, states=states)
+```
+
+The nucleosome model runs over the whole 147 bp under `nuc_method`, so it
+already contains the dangling arms — but under the wrong parameter set. The
+arms are therefore swapped out for their free-DNA description:
+
+```
+F             = F_nuc(full, nuc params) - F_arm(nuc params) + F_arm(free params)
+F_freedna     = F_bound(free params)    + F_arm(free params)
+F_fluctuation = F - F_enthalpy
+```
+
+The second line is just the whole molecule as free DNA, so `F_freedna` is
+state-independent. Both lines use the same decomposition, so
+
+```
+dF = [F_nuc(full) - F_arm(nuc)] - F_bound(free)
+```
+
+is a like-for-like comparison of the wrapped region under the two force fields;
+the free-DNA arm term cancels.
+
+Leaving `free_dna_method` as `None` disables the recombination and makes the
+wrapper a thin pass-through over `free_energy.py` script.
+
+### The free-DNA split, and why cgNA+ needs care
+
+The split at the outermost bound sites gives the arms as a plain slice and the
+wrapped block as a Schur complement:
+
+```
+F_arm   = ½ logdet( K[B,B] )                                  - ½·|B|·log 2π
+F_bound = ½ logdet( K[A,A] - K[A,B] K[B,B]⁻¹ K[B,A] )         - ½·|A|·log 2π
+```
+
+For crystal, md and hybrid the stiffness is block-diagonal, `K[A,B]` is zero,
+the correction vanishes, and both blocks are plain slices — which is why
+truncating the matrix is exact for those models, and fast.
+
+cgNA+ couples base-pair steps out to roughly eight steps, so truncation is no
+longer valid. Slicing *both* blocks double-counts the cross-boundary coupling
+and overshoots the whole-molecule free energy by ~1.6 kT. Exactly one block must
+take the Schur complement.
+
+It has to be the **wrapped** block, not the arms. Both assignments are exactly
+additive, so additivity cannot choose between them; what chooses is that the
+binding constraints act only on the wrapped region, so the operation that
+factorises the constrained partition function is integrating out the *arms*.
+With this convention
+
+```
+F_nuc(full 147 bp) - F_arm(slice) == F_wrapped(arms marginalised out)
+```
+
+holds to machine precision (measured: 2e-12 kT over 65 sequence/state pairs
+spanning GC content 0.20–0.80 and 8–26 bound sites). The arm removal is exact
+for cgNA+, not an approximation. Putting the Schur complement on the arms
+instead breaks that identity by ~1.5 kT, state-dependently.
+
+### Results
+
+`calculate_free_energy_soft` and `calculate_free_energy_hard` return a
+`MultiharmonicResult` supporting both attribute and mapping access:
+
+| field | meaning |
+|---|---|
+| `F` | total free energy |
+| `F_fluctuation` | fluctuation contribution (alias: `F_entropy`) |
+| `F_enthalpy` | enthalpic contribution |
+| `F_freedna` | free-DNA reference |
+| `dF` | `F - F_freedna` |
+| `id`, `subid` | caller-supplied labels, passed through |
+
+### State styles
+
+`left` and `right` are interpreted according to `style`:
+
+| style | meaning | fully wrapped |
+|---|---|---|
+| `b_index` (default) | binding-site pair index from each end | `(0, 13)` |
+| `ph_index` | binding-site index from each end | `(0, 27)` |
+| `open_sites` | number of *open* sites at each end | `(0, 0)` |
+
+
 ## References
 
 \[1\] <a name="lank03"></a> F. Lankaš, Jiří Šponer, Jörg Langowski, Thomas E. Cheatham, III, DNA basepair step deformability inferred from molecular dynamics simulations, [Biophys. J, **85**, 2872 (2003)](https://doi.org/10.1016/S0006-3495(03)74710-9).
