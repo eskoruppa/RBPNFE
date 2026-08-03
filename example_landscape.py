@@ -17,14 +17,14 @@ import rbpnfe
 params_model = 'md'
 params_model = 'cgnaplus'
 hard_constraint = False
-ncores = 4
+ncores = 1
 verbose = False
 use_correction = True
 
 shl_open_left = 0
 shl_open_right = 0
 
-factors = [0.6,0.6,0.70,1.0,1.0,0.4]  
+factors = [0.6,0.6,0.70,1.0,1.0,0.4]  ### Tilt, Roll, Twist, Shift, Slide, Rise ### Optimized for the 50nm presistent length of DNA
 
 nfe = rbpnfe.NucFreeEnergy(
     params_model = params_model,

@@ -29,3 +29,10 @@
 
 # ignore python scripts
 **fit_factors.py
+
+# ignore notebooks
+**.ipynb_checkpoints/
+**.ipynb
+
+# ignore docs 
+docs/**
