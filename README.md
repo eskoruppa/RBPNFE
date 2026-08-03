@@ -271,7 +271,7 @@ is a like-for-like comparison of the wrapped region under the two force fields;
 the free-DNA arm term cancels.
 
 Leaving `free_dna_method` as `None` disables the recombination and makes the
-wrapper a thin pass-through over `free_energy.py` script.
+wrapper a thin pass-through over ` NucFreeEnergy` function.
 
 ### The free-DNA split, and why cgNA+ needs care
 
